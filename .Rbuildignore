@@ -1,0 +1,7 @@
+^renv$
+^renv\.lock$
+^fno\.R\.Rproj$
+^\.Rproj\.user$
+^tmp$
+^\.idea$
+^LICENSE\.md$
