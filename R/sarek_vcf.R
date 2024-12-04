@@ -344,6 +344,7 @@ convert_vcf_files_to_finalist <- function(
     vc_tool = c("haplotypecaller", "deepvariant", "strelka"),
     vcf_annotation_tool = c("vep", "common", "snpeff")) {
   vc_tool <- rlang::arg_match(vc_tool)
+  vcf_annotation_tool <- rlang::arg_match(vcf_annotation_tool)
 
   .validate_vcf_files(vcf_files)
   sample_names <- .extract_sample_names(vcf_files, vc_tool = vc_tool)
