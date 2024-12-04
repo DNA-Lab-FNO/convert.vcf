@@ -1,4 +1,4 @@
-.get_vcf_convert_parsed_args <- function(args) {
+.get_convert_vcf_parsed_args <- function(args) {
   parser <- argparse::ArgumentParser(description = "Aggregate and convert VCF files to user-friendly format, including FinalistDX Excel format")
   parser$add_argument(
     "--vc_tool",
@@ -43,8 +43,8 @@
 }
 
 #' @export
-run_vcf_convert_cli <- function(args = commandArgs(TRUE)) {
-  args <- .get_vcf_convert_parsed_args(args)
+run_convert_vcf_cli <- function(args = commandArgs(TRUE)) {
+  args <- .get_convert_vcf_parsed_args(args)
 
   cli::cli_alert_info("Input files ({length(args$vcf_files)}):")
   cli::cli_li(items = glue("{{.file {args$vcf_files}}}"))

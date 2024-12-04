@@ -51,7 +51,7 @@ assert_haplotypecaller_finalist_df_equality <- function(run_name) {
 assert_finalist_csv_equal <- function(run_name, vc_tool, glob) {
   cli::cli_alert_info("{run_name} / {vc_tool} / {glob}")
   withr::with_tempfile("out_file", fileext = ".csv", code = {
-    run_vcf_convert_cli(c("--vc_tool", vc_tool, "--output_file", out_file, .get_vcf_files(run_name, glob)))
+    run_convert_vcf_cli(c("--vc_tool", vc_tool, "--output_file", out_file, .get_vcf_files(run_name, glob)))
     expect_snapshot_file(out_file, name = glue("{run_name}_{vc_tool}.csv"))
   })
 }
