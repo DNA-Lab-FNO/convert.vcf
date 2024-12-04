@@ -33,6 +33,7 @@
   }
 }
 
+#' @export
 read_vcf <- function(file, sample_name, vcf_annotation_tool = c("vep", "common", "snpeff")) {
   vcf_annotation_tool <- rlang::arg_match(vcf_annotation_tool)
 
@@ -54,6 +55,7 @@ read_vcf <- function(file, sample_name, vcf_annotation_tool = c("vep", "common",
     dplyr::relocate(SAMPLE, input_file)
 }
 
+#' @export
 filter_vcf <- function(vcf_df, vc_tool = c("haplotypecaller", "deepvariant", "strelka")) {
   vc_tool <- rlang::arg_match(vc_tool)
 
@@ -69,6 +71,7 @@ filter_vcf <- function(vcf_df, vc_tool = c("haplotypecaller", "deepvariant", "st
   }
 }
 
+#' @export
 create_variant_keys <- function(vcf_df) {
   vcf_df %>%
     dplyr::mutate(
@@ -77,28 +80,29 @@ create_variant_keys <- function(vcf_df) {
     )
 }
 
+#' @export
 calculate_variant_stats <- function(vcf_df, vc_tool = c("haplotypecaller", "deepvariant", "strelka")) {
   vc_tool <- rlang::arg_match(vc_tool)
 
   if (vc_tool %in% c("haplotypecaller", "strelka")) {
     vcf_df %>%
       dplyr::mutate(
-        get_alt_allele_stats_haplotypecaller_strelka(vcf_df$gt_AD, vcf_df$gt_GT)
+        .get_alt_allele_stats_haplotypecaller_strelka(vcf_df$gt_AD, vcf_df$gt_GT)
       )
   } else if (vc_tool == "deepvariant") {
     vcf_df %>%
       dplyr::mutate(
-        get_alt_allele_stats_deepvariant(vcf_df$gt_AD, vcf_df$gt_GT, vcf_df$gt_VAF)
+        .get_alt_allele_stats_deepvariant(vcf_df$gt_AD, vcf_df$gt_GT, vcf_df$gt_VAF)
       )
   }
 }
 
-get_alt_allele_stats_haplotypecaller_strelka <- function(gt_AD, gt_GT) {
+.get_alt_allele_stats_haplotypecaller_strelka <- function(gt_AD, gt_GT) {
   assertthat::assert_that(length(gt_AD) == length(gt_GT))
 
-  gt_AD_split <- split_by_char(gt_AD, as_matrix = FALSE)
-  gt_AD_split_m <- split_by_char(gt_AD, as_matrix = TRUE)
-  gt_GT_split <- split_by_char(gt_GT, char = "/", as_matrix = FALSE)
+  gt_AD_split <- .split_by_char(gt_AD, as_matrix = FALSE)
+  gt_AD_split_m <- .split_by_char(gt_AD, as_matrix = TRUE)
+  gt_GT_split <- .split_by_char(gt_GT, char = "/", as_matrix = FALSE)
   df <- tibble::tibble(i = seq_len(length(gt_AD)), gt_GT = gt_GT, gt_GT_split = gt_GT_split, gt_AD_split = gt_AD_split)
 
   df %>%
@@ -128,13 +132,13 @@ get_alt_allele_stats_haplotypecaller_strelka <- function(gt_AD, gt_GT) {
     dplyr::arrange(i)
 }
 
-get_alt_allele_stats_deepvariant <- function(gt_AD, gt_GT, gt_VAF) {
+.get_alt_allele_stats_deepvariant <- function(gt_AD, gt_GT, gt_VAF) {
   assertthat::assert_that(length(gt_AD) == length(gt_GT))
   assertthat::assert_that(length(gt_AD) == length(gt_VAF))
 
-  gt_AD_split <- split_by_char(gt_AD, as_matrix = FALSE)
-  gt_split <- split_by_char(gt_GT, char = "/", as_matrix = FALSE)
-  vaf_split <- split_by_char(gt_VAF, as_matrix = FALSE, convert_to = "double")
+  gt_AD_split <- .split_by_char(gt_AD, as_matrix = FALSE)
+  gt_split <- .split_by_char(gt_GT, char = "/", as_matrix = FALSE)
+  vaf_split <- .split_by_char(gt_VAF, as_matrix = FALSE, convert_to = "double")
   df <- tibble::tibble(
     i = seq_len(length(gt_AD)),
     gt_GT = gt_GT,
@@ -168,19 +172,7 @@ get_alt_allele_stats_deepvariant <- function(gt_AD, gt_GT, gt_VAF) {
     dplyr::arrange(i)
 }
 
-split_by_char <- function(x, char = ",", as_matrix = TRUE, convert_to = "integer", NA_fill = 0) {
-  if (as_matrix) {
-    res <- stringr::str_split(x, stringr::fixed(char), simplify = TRUE)
-    mode(res) <- convert_to
-    res[is.na(res)] <- NA_fill
-  } else {
-    res <- stringr::str_split(x, stringr::fixed(char)) %>%
-      purrr::map(methods::as, convert_to)
-  }
-
-  res
-}
-
+#' @export
 convert_vcf_df_to_finalist <- function(vcf_df) {
   n_samples <- unique(vcf_df$SAMPLE) %>% length()
 
@@ -318,6 +310,7 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
     dplyr::arrange(Name, Chr, Coordinate)
 }
 
+#' @export
 get_per_sample_variant_stats <- function(vcf_df) {
   vcf_df %>%
     dplyr::group_by(SAMPLE, input_file) %>%
@@ -330,6 +323,7 @@ get_per_sample_variant_stats <- function(vcf_df) {
     dplyr::bind_rows()
 }
 
+#' @export
 get_variant_stats <- function(vcf_df) {
   vcf_df <- dplyr::distinct(vcf_df, SAMPLE_variant_key, .keep_all = TRUE)
   tibble::tibble(
@@ -338,13 +332,13 @@ get_variant_stats <- function(vcf_df) {
   )
 }
 
+#' @export
 convert_vcf_files_to_finalist <- function(
     vcf_files,
     filter_variants = TRUE,
     vc_tool = c("haplotypecaller", "deepvariant", "strelka"),
     vcf_annotation_tool = c("vep", "common", "snpeff")) {
   vc_tool <- rlang::arg_match(vc_tool)
-  vcf_annotation_tool <- rlang::arg_match(vcf_annotation_tool)
 
   .validate_vcf_files(vcf_files)
   sample_names <- .extract_sample_names(vcf_files, vc_tool = vc_tool)

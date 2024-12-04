@@ -42,6 +42,7 @@
   parser$parse_args(args = args)
 }
 
+#' @export
 run_vcf_convert_cli <- function(args = commandArgs(TRUE)) {
   args <- .get_vcf_convert_parsed_args(args)
 
