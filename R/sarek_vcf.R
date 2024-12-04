@@ -10,11 +10,16 @@
   }
 }
 
-.extract_sample_name <- function(file, vc_tool) {
-  base_name <- fs::path_file(file)
-  sample_name <- stringr::str_extract(base_name, glue("(.+)\\.{vc_tool}\\..+\\.vcf"), group = 1)
-  assertthat::assert_that(!rlang::is_na(sample_name), msg = glue("Unable to extract sample name from file '{file}'"))
-  sample_name
+.extract_sample_names <- function(files, vc_tool) {
+  base_names <- fs::path_file(files)
+  sample_names <- stringr::str_extract(base_names, glue("(.+)\\.{vc_tool}(_|\\.).+\\.vcf"), group = 1)
+
+  files_with_na_sample_names <- files[is.na(sample_names)]
+  if (length(files_with_na_sample_names) > 0) {
+    cli::cli_abort("Unable to extract sample names from files (vc_tool = '{.field {vc_tool}}'): {.file {files_with_na_sample_names}}")
+  }
+
+  sample_names
 }
 
 .check_duplicated_samples <- function(vcf_files, sample_names) {
@@ -60,7 +65,7 @@ filter_vcf <- function(vcf_df, vc_tool = c("haplotypecaller", "deepvariant", "st
       dplyr::filter(FILTER != "RefCall", gt_GT != "0/0")
   } else if (vc_tool == "strelka") {
     vcf_df %>%
-      dplyr::filter(FILTER == "PASS", stringr::str_detect(gt_GT, fixed("/")))
+      dplyr::filter(FILTER == "PASS", stringr::str_detect(gt_GT, stringr::fixed("/")))
   }
 }
 
@@ -341,7 +346,7 @@ convert_vcf_files_to_finalist <- function(
   vc_tool <- rlang::arg_match(vc_tool)
 
   .validate_vcf_files(vcf_files)
-  sample_names <- .extract_sample_name(vcf_files, vc_tool = vc_tool)
+  sample_names <- .extract_sample_names(vcf_files, vc_tool = vc_tool)
   .check_duplicated_samples(vcf_files, sample_names)
 
   cli::cli_alert_info("Starting the conversion")
