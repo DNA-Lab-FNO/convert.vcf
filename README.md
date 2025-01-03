@@ -1,2 +1,3 @@
-# fno.R
-R package for Faculty Hospital Ostrava
+# convert.vcf
+
+Conversion of VCF to FinalistDX Excel format
