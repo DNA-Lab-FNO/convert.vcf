@@ -6,7 +6,6 @@ Conversion of VCF to FinalistDX Excel format
 
 If not yet, first create a new [GitHub PAT](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic)
 with permissions for private repository access and save the token
-Run export GITHUB_PAT="<token>"
 
 ### Package
 
