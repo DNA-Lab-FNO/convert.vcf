@@ -10,7 +10,8 @@
   }
 }
 
-.extract_sample_names <- function(files, vc_tool) {
+#' @export
+extract_sample_names <- function(files, vc_tool) {
   base_names <- fs::path_file(files)
   sample_names <- stringr::str_extract(base_names, glue("(.+)\\.{vc_tool}(_|\\.).+\\.vcf"), group = 1)
 
@@ -33,6 +34,19 @@
   }
 }
 
+#' @title Read VCF file into tidy tibble
+#'
+#' @description Internally, this function uses a [modified version](https://github.com/gorgitko/vcfR) of the vcfR package
+#' that is able to parse annotated VCF (by VEP or snpEff tools) into a tidy tibble.
+#' It is necessary to select the proper annotation tool of origin (see the `vcf_annotation_tool` parameter)
+#' in order to correctly parse the VCF.
+#'
+#' @param file A character scalar: path to file VCF file (can be also gzipped)
+#' @param sample_name A character scalar: sample name to fill in `SAMPLE` column of the output tibble
+#' @inheritParams vcf_annotation_tool_param
+#'
+#' @return A tibble, with `meta` attribute storing some additional VCF metadata
+#'
 #' @export
 read_vcf <- function(file, sample_name, vcf_annotation_tool = c("vep", "common", "snpeff")) {
   vcf_annotation_tool <- rlang::arg_match(vcf_annotation_tool)
@@ -172,6 +186,12 @@ calculate_variant_stats <- function(vcf_df, vc_tool = c("haplotypecaller", "deep
     dplyr::arrange(i)
 }
 
+#' @title Convert a VCF tibble to the FinalistDX format
+#'
+#' @param vcf_df A tibble: obtained with [read_vcf()]
+#'
+#' @return A tibble
+#'
 #' @export
 convert_vcf_df_to_finalist <- function(vcf_df) {
   n_samples <- unique(vcf_df$SAMPLE) %>% length()
@@ -332,6 +352,23 @@ get_variant_stats <- function(vcf_df) {
   )
 }
 
+#' @title Convert VCF files into FinalistDX format and export to Excel
+#'
+#' @description This function provides the following steps:
+#' 1. Extraction of sample names from VCF files (see [extract_sample_names()])
+#' 2. Conversion of VCF files to tidy tibble (see [read_vcf()])
+#' 3. Filtering of variants (see [filter_vcf()])
+#' 4. Creation of `SAMPLE_variant_key` column to uniquely identify a variant among multiple samples (see [create_variant_keys()])
+#' 5. Creation of variants stats (`gt_GT`, `gt_AD` etc., see [calculate_variant_stats()])
+#' 6. Conversion to FinalistDX format (see [convert_vcf_df_to_finalist()])
+#'
+#' @param vcf_files A character scalar/vector: path(s) to VCF files
+#' @param filter_variants A logical scalar: if `TRUE`, apply [filter_vcf()]
+#' @param vc_tool A character scalar: variant calling tool used to produce the VCF files
+#' @inheritParams vcf_annotation_tool_param
+#'
+#' @return A tibble
+#'
 #' @export
 convert_vcf_files_to_finalist <- function(
     vcf_files,

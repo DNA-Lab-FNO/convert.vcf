@@ -5,6 +5,6 @@
 /tmp/
 /renv/
 /.Rprofile
-/fno.R.Rproj
+/convert.vcf.Rproj
 /.idea/
 .DS_Store
