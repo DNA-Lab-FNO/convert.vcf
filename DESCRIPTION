@@ -1,9 +1,9 @@
-Package: fno.R
-Title: Various functions and scripts for Faculty Hospital Ostrava
+Package: convert.vcf
+Title: Conversion of VCF files into FinalistDX format
 Version: 0.0.0.9000
 Authors@R:
     person("Jiri", "Novotny", email = "jiri.novotny@fno.cz", role = c("aut", "cre"))
-Description: Various functions and scripts for Faculty Hospital Ostrava.
+Description: Conversion of VCF files into FinalistDX format.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
