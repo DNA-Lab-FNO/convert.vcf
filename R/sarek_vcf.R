@@ -41,14 +41,28 @@ extract_sample_names <- function(files, vc_tool) {
 #' It is necessary to select the proper annotation tool of origin (see the `vcf_annotation_tool` parameter)
 #' in order to correctly parse the VCF.
 #'
+#' Extra steps in this function:
+#' 1. Filtering of variants (see [filter_vcf()]) if `filter_variants` is `TRUE`
+#' 2. Creation of `variant_key` and `SAMPLE_variant_key` column to uniquely identify a variant and also among multiple samples,
+#'    respectively (see [create_variant_keys()])
+#' 3. Creation of variants stats (`gt_GT`, `gt_AD` etc., see [calculate_variant_stats()])
+#'
 #' @param file A character scalar: path to file VCF file (can be also gzipped)
 #' @param sample_name A character scalar: sample name to fill in `SAMPLE` column of the output tibble
+#'
+#' @inheritParams filter_variants_param
+#' @inheritParams vc_tool_param
 #' @inheritParams vcf_annotation_tool_param
 #'
 #' @return A tibble, with `meta` attribute storing some additional VCF metadata
 #'
 #' @export
-read_vcf <- function(file, sample_name, vcf_annotation_tool = c("vep", "common", "snpeff")) {
+read_vcf <- function(
+    file,
+    sample_name,
+    filter_variants = TRUE,
+    vc_tool = c("haplotypecaller", "deepvariant", "strelka"),
+    vcf_annotation_tool = c("vep", "common", "snpeff")) {
   vcf_annotation_tool <- rlang::arg_match(vcf_annotation_tool)
 
   vcf_tidy <- vcfR::read.vcfR(file, verbose = FALSE) %>%
@@ -64,9 +78,19 @@ read_vcf <- function(file, sample_name, vcf_annotation_tool = c("vep", "common",
 
   attr(vcf_df, "meta") <- vcf_tidy$meta
 
-  vcf_df %>%
+  vcf_df <- vcf_df %>%
     dplyr::mutate(SAMPLE = !!sample_name, input_file = !!file) %>%
     dplyr::relocate(SAMPLE, input_file)
+
+  if (filter_variants) {
+    cli::cli_alert_info("Filtering variants")
+    vcf_df <- filter_vcf(vcf_df, vc_tool = vc_tool)
+    cli::cli_alert_success("Done")
+  }
+
+  vcf_df %>%
+    create_variant_keys() %>%
+    calculate_variant_stats(vc_tool = vc_tool)
 }
 
 #' @export
@@ -117,9 +141,8 @@ calculate_variant_stats <- function(vcf_df, vc_tool = c("haplotypecaller", "deep
   gt_AD_split <- .split_by_char(gt_AD, as_matrix = FALSE)
   gt_AD_split_m <- .split_by_char(gt_AD, as_matrix = TRUE)
   gt_GT_split <- .split_by_char(gt_GT, char = "/", as_matrix = FALSE)
-  df <- tibble::tibble(i = seq_len(length(gt_AD)), gt_GT = gt_GT, gt_GT_split = gt_GT_split, gt_AD_split = gt_AD_split)
 
-  df %>%
+  tibble::tibble(i = seq_len(length(gt_AD)), gt_GT = gt_GT, gt_GT_split = gt_GT_split, gt_AD_split = gt_AD_split) %>%
     dplyr::group_by(gt_GT) %>%
     dplyr::group_map(function(data, key) {
       gt_GT_split <- data$gt_GT_split[[1]]
@@ -247,6 +270,8 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       Variant_class = variant_class,
       Coordinate = POS,
       Feature = feature,
+      `MANE Select` = mane_select,
+      `MANE Plus Clinical` = mane_plus_clinical,
       Canonical,
       Exon = exon,
       Intron = intron,
@@ -357,14 +382,11 @@ get_variant_stats <- function(vcf_df) {
 #' @description This function provides the following steps:
 #' 1. Extraction of sample names from VCF files (see [extract_sample_names()])
 #' 2. Conversion of VCF files to tidy tibble (see [read_vcf()])
-#' 3. Filtering of variants (see [filter_vcf()])
-#' 4. Creation of `SAMPLE_variant_key` column to uniquely identify a variant among multiple samples (see [create_variant_keys()])
-#' 5. Creation of variants stats (`gt_GT`, `gt_AD` etc., see [calculate_variant_stats()])
-#' 6. Conversion to FinalistDX format (see [convert_vcf_df_to_finalist()])
+#' 3. Conversion to FinalistDX format (see [convert_vcf_df_to_finalist()])
 #'
 #' @param vcf_files A character scalar/vector: path(s) to VCF files
-#' @param filter_variants A logical scalar: if `TRUE`, apply [filter_vcf()]
-#' @param vc_tool A character scalar: variant calling tool used to produce the VCF files
+#' @inheritParams filter_variants_param
+#' @inheritParams vc_tool_param
 #' @inheritParams vcf_annotation_tool_param
 #'
 #' @return A tibble
@@ -378,24 +400,13 @@ convert_vcf_files_to_finalist <- function(
   vc_tool <- rlang::arg_match(vc_tool)
 
   .validate_vcf_files(vcf_files)
-  sample_names <- .extract_sample_names(vcf_files, vc_tool = vc_tool)
+  sample_names <- extract_sample_names(vcf_files, vc_tool = vc_tool)
   .check_duplicated_samples(vcf_files, sample_names)
 
   cli::cli_alert_info("Starting the conversion")
   agg_df <- purrr::map2_dfr(vcf_files, sample_names, function(vcf_file, sample_name) {
     cli::cli_alert_info("Processing sample {.field {sample_name}} ({.file {vcf_file}})")
-
-    res <- read_vcf(vcf_file, sample_name, vcf_annotation_tool = vcf_annotation_tool)
-
-    if (filter_variants) {
-      cli::cli_alert_info("Filtering variants")
-      res <- filter_vcf(res, vc_tool = vc_tool)
-      cli::cli_alert_success("Done")
-    }
-
-    res %>%
-      create_variant_keys() %>%
-      calculate_variant_stats(vc_tool = vc_tool)
+    read_vcf(vcf_file, sample_name, filter_variants = filter_variants, vc_tool = vc_tool, vcf_annotation_tool = vcf_annotation_tool)
   })
   cli::cli_alert_success("Done")
 
