@@ -16,7 +16,8 @@ convert_vcf_files_to_finalist(
 
 \item{filter_variants}{A logical scalar: if \code{TRUE}, apply \code{\link[=filter_vcf]{filter_vcf()}}}
 
-\item{vc_tool}{A character scalar: variant calling tool used to produce the VCF files}
+\item{vc_tool}{A character scalar: variant calling tool used to produce the VCF files.
+This influences behaviour \code{\link[=calculate_variant_stats]{calculate_variant_stats()}}.}
 
 \item{vcf_annotation_tool}{A character scalar: which variant annotation tool was used:
 \itemize{
@@ -33,9 +34,6 @@ This function provides the following steps:
 \enumerate{
 \item Extraction of sample names from VCF files (see \code{\link[=extract_sample_names]{extract_sample_names()}})
 \item Conversion of VCF files to tidy tibble (see \code{\link[=read_vcf]{read_vcf()}})
-\item Filtering of variants (see \code{\link[=filter_vcf]{filter_vcf()}})
-\item Creation of \code{SAMPLE_variant_key} column to uniquely identify a variant among multiple samples (see \code{\link[=create_variant_keys]{create_variant_keys()}})
-\item Creation of variants stats (\code{gt_GT}, \code{gt_AD} etc., see \code{\link[=calculate_variant_stats]{calculate_variant_stats()}})
 \item Conversion to FinalistDX format (see \code{\link[=convert_vcf_df_to_finalist]{convert_vcf_df_to_finalist()}})
 }
 }
