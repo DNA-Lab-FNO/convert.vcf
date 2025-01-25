@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(fno.R)
+library(convert.vcf)
 
-test_check("fno.R")
+test_check("convert.vcf")

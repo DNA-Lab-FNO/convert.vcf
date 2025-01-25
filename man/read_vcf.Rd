@@ -4,12 +4,23 @@
 \alias{read_vcf}
 \title{Read VCF file into tidy tibble}
 \usage{
-read_vcf(file, sample_name, vcf_annotation_tool = c("vep", "common", "snpeff"))
+read_vcf(
+  file,
+  sample_name,
+  filter_variants = TRUE,
+  vc_tool = c("haplotypecaller", "deepvariant", "strelka"),
+  vcf_annotation_tool = c("vep", "common", "snpeff")
+)
 }
 \arguments{
 \item{file}{A character scalar: path to file VCF file (can be also gzipped)}
 
 \item{sample_name}{A character scalar: sample name to fill in \code{SAMPLE} column of the output tibble}
+
+\item{filter_variants}{A logical scalar: if \code{TRUE}, apply \code{\link[=filter_vcf]{filter_vcf()}}}
+
+\item{vc_tool}{A character scalar: variant calling tool used to produce the VCF files.
+This influences behaviour \code{\link[=calculate_variant_stats]{calculate_variant_stats()}}.}
 
 \item{vcf_annotation_tool}{A character scalar: which variant annotation tool was used:
 \itemize{
@@ -26,4 +37,12 @@ Internally, this function uses a \href{https://github.com/gorgitko/vcfR}{modifie
 that is able to parse annotated VCF (by VEP or snpEff tools) into a tidy tibble.
 It is necessary to select the proper annotation tool of origin (see the \code{vcf_annotation_tool} parameter)
 in order to correctly parse the VCF.
+
+Extra steps in this function:
+\enumerate{
+\item Filtering of variants (see \code{\link[=filter_vcf]{filter_vcf()}}) if \code{filter_variants} is \code{TRUE}
+\item Creation of \code{variant_key} and \code{SAMPLE_variant_key} column to uniquely identify a variant and also among multiple samples,
+respectively (see \code{\link[=create_variant_keys]{create_variant_keys()}})
+\item Creation of variants stats (\code{gt_GT}, \code{gt_AD} etc., see \code{\link[=calculate_variant_stats]{calculate_variant_stats()}})
+}
 }
