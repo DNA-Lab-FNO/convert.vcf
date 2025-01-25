@@ -1,6 +1,8 @@
 # convert.vcf
 
-Conversion of VCF to FinalistDX Excel format
+Conversion of VCF to FinalistDX Excel format. This package depends on a
+[custom version of vcf.R package](https://github.com/gorgitko/vcfR) that can parse annotated VCFs produced by
+VEP and snpEff tools.
 
 ## Installation
 
