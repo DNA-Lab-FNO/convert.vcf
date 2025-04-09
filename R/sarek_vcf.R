@@ -352,6 +352,7 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
         as.integer
       )
     ) %>%
+    dplyr::mutate(`Variant Frequency` = `Variant Frequency` * 100) %>%
     dplyr::arrange(Name, Chr, Coordinate)
 }
 
