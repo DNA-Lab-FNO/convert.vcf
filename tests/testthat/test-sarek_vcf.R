@@ -18,6 +18,19 @@ EXPECTED_FINALIST_FILES_DIR <- fs::path("expected_data/finalist")
   })
 }
 
+.update_expected_finalist_df <- function(vcf_files, run_name, expected_finalist_df) {
+  purrr::map_dfr(vcf_files, function(vcf_file) {
+    base_filename <- fs::path_file(vcf_file)
+    expected_filename <- glue::glue("{EXPECTED_FINALIST_FILES_DIR}/{run_name}/{base_filename}.rds")
+    expected_finalist_df_sample <- expected_finalist_df %>%
+      dplyr::filter(stringr::str_detect(fs::path_file(vcf_file), as.character(Name)))
+    message(glue::glue("Updated {expected_filename} (sample {unique(expected_finalist_df_sample$Name)})"))
+    saveRDS(expected_finalist_df_sample, expected_filename)
+  })
+
+  NULL
+}
+
 .prepare_finalist_df <- function(finalist_df) {
   finalist_df %>%
     # those are context-dependent (number of converted samples)
@@ -28,8 +41,8 @@ EXPECTED_FINALIST_FILES_DIR <- fs::path("expected_data/finalist")
 
 assert_haplotypecaller_finalist_df_equality <- function(run_name) {
   vcf_files <- .get_vcf_files(run_name, HAPLOTYPECALLER_VCF_GLOB)
-  finalist_df <- convert_vcf_files_to_finalist(vcf_files, vc_tool = "haplotypecaller", vcf_annotation_tool = "vep") %>%
-    .prepare_finalist_df()
+  finalist_df_orig <- convert_vcf_files_to_finalist(vcf_files, vc_tool = "haplotypecaller", vcf_annotation_tool = "vep")
+  finalist_df <- .prepare_finalist_df(finalist_df_orig)
 
   expected_finalist_df <- .load_expected_finalist_df(vcf_files, run_name) %>%
     .prepare_finalist_df()
@@ -40,6 +53,7 @@ assert_haplotypecaller_finalist_df_equality <- function(run_name) {
   if (df_diff_invalid) {
     warning("Found differences between expected and output Finalist dataframe")
     print(df_diff)
+    # .update_expected_finalist_df(vcf_files, run_name, finalist_df_orig)
     expect_false(df_diff_invalid)
   }
 
