@@ -3,6 +3,7 @@ TEST_VCF_FILES_DIR <- fs::path("test_data/vcf")
 HAPLOTYPECALLER_VCF_GLOB <- "*.haplotypecaller.filtered_VEP.ann.vcf.gz"
 DEEPVARIANT_VCF_GLOB <- "*.deepvariant_VEP.ann.vcf.gz"
 STRELKA_VCF_GLOB <- "*.strelka.variants_VEP.ann.vcf.gz"
+MUTECT2_VCF_GLOB <- "*.mutect2.filtered_VEP.ann.vcf.gz"
 
 EXPECTED_FINALIST_FILES_DIR <- fs::path("expected_data/finalist")
 
@@ -22,6 +23,7 @@ EXPECTED_FINALIST_FILES_DIR <- fs::path("expected_data/finalist")
   purrr::map_dfr(vcf_files, function(vcf_file) {
     base_filename <- fs::path_file(vcf_file)
     expected_filename <- glue::glue("{EXPECTED_FINALIST_FILES_DIR}/{run_name}/{base_filename}.rds")
+    fs::dir_create(fs::path_dir(expected_filename), recurse = TRUE)
     expected_finalist_df_sample <- expected_finalist_df %>%
       dplyr::filter(stringr::str_detect(fs::path_file(vcf_file), as.character(Name)))
     message(glue::glue("Updated {expected_filename} (sample {unique(expected_finalist_df_sample$Name)})"))
@@ -39,11 +41,18 @@ EXPECTED_FINALIST_FILES_DIR <- fs::path("expected_data/finalist")
     dplyr::arrange(SAMPLE_variant_key)
 }
 
-assert_haplotypecaller_finalist_df_equality <- function(run_name) {
-  vcf_files <- .get_vcf_files(run_name, HAPLOTYPECALLER_VCF_GLOB)
-  finalist_df_orig <- convert_vcf_files_to_finalist(vcf_files, vc_tool = "haplotypecaller", vcf_annotation_tool = "vep")
-  finalist_df <- .prepare_finalist_df(finalist_df_orig)
+assert_finalist_df_equality <- function(run_name, vc_tool = c("haplotypecaller", "mutect2")) {
+  vc_tool <- rlang::arg_match(vc_tool)
 
+  if (vc_tool == "haplotypecaller") {
+    glob <- HAPLOTYPECALLER_VCF_GLOB
+  } else if (vc_tool == "mutect2") {
+    glob <- MUTECT2_VCF_GLOB
+  }
+
+  vcf_files <- .get_vcf_files(run_name, glob)
+  finalist_df_orig <- convert_vcf_files_to_finalist(vcf_files, vc_tool = vc_tool, vcf_annotation_tool = "vep")
+  finalist_df <- .prepare_finalist_df(finalist_df_orig)
   expected_finalist_df <- .load_expected_finalist_df(vcf_files, run_name) %>%
     .prepare_finalist_df()
 
@@ -71,11 +80,11 @@ assert_finalist_csv_equal <- function(run_name, vc_tool, glob) {
 }
 
 test_that("Conversion to FinalistDX format works (old Sarek 3.1.* VCF/VEP format, haplotypecaller)", {
-  assert_haplotypecaller_finalist_df_equality("2021_09_MR-Mikro4")
+  assert_finalist_df_equality("2021_09_MR-Mikro4", vc_tool = "haplotypecaller")
 })
 
 test_that("Conversion to FinalistDX format works (new Sarek 3.4.2 VCF/VEP format, haplotypecaller)", {
-  assert_haplotypecaller_finalist_df_equality("2024_05_24_Panel_run_2")
+  assert_finalist_df_equality("2024_05_24_Panel_run_2", vc_tool = "haplotypecaller")
 })
 
 test_that("Conversion to FinalistDX format works using CLI (old Sarek 3.1.* VCF/VEP format, all VC tools, CSV output)", {
@@ -88,4 +97,8 @@ test_that("Conversion to FinalistDX format works using CLI (old Sarek 3.1.* VCF/
 test_that("Conversion to FinalistDX format works using CLI (new Sarek 3.4.2 VCF/VEP format, haplotypecaller, CSV output)", {
   run_name <- "2024_05_24_Panel_run_2"
   assert_finalist_csv_equal(run_name, "haplotypecaller", HAPLOTYPECALLER_VCF_GLOB)
+})
+
+test_that("Conversion to FinalistDX format works (new Sarek 3.4.2 VCF/VEP format, mutect2)", {
+  assert_finalist_df_equality("2025_04_03_Panel_run_23_BRCA_255_tkane", vc_tool = "mutect2")
 })

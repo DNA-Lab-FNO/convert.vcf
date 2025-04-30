@@ -1,10 +1,10 @@
-.split_by_char <- function(x, char = ",", as_matrix = TRUE, convert_to = "integer", NA_fill = 0) {
+.split_by_char <- function(x, char = ",", as_matrix = TRUE, convert_to = "integer", NA_fill = 0, regex = FALSE) {
   if (as_matrix) {
-    res <- stringr::str_split(x, stringr::fixed(char), simplify = TRUE)
+    res <- stringr::str_split(x, pattern = if (regex) char else stringr::fixed(char), simplify = TRUE)
     mode(res) <- convert_to
     res[is.na(res)] <- NA_fill
   } else {
-    res <- stringr::str_split(x, stringr::fixed(char)) %>%
+    res <- stringr::str_split(x, pattern = if (regex) char else stringr::fixed(char)) %>%
       purrr::map(methods::as, convert_to)
   }
 
