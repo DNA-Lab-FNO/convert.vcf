@@ -87,7 +87,7 @@ test_that("Conversion to FinalistDX format works (new Sarek 3.4.2 VCF/VEP format
   assert_finalist_df_equality("2024_05_24_Panel_run_2", vc_tool = "haplotypecaller")
 })
 
-test_that("Conversion to FinalistDX format works using CLI (old Sarek 3.1.* VCF/VEP format, all VC tools, CSV output)", {
+test_that("Conversion to FinalistDX format works using CLI (old Sarek 3.1.* VCF/VEP format, all VC tools except mutect2, CSV output)", {
   run_name <- "2021_09_MR-Mikro4"
   assert_finalist_csv_equal(run_name, "haplotypecaller", HAPLOTYPECALLER_VCF_GLOB)
   assert_finalist_csv_equal(run_name, "deepvariant", DEEPVARIANT_VCF_GLOB)
@@ -101,4 +101,9 @@ test_that("Conversion to FinalistDX format works using CLI (new Sarek 3.4.2 VCF/
 
 test_that("Conversion to FinalistDX format works (new Sarek 3.4.2 VCF/VEP format, mutect2)", {
   assert_finalist_df_equality("2025_04_03_Panel_run_23_BRCA_255_tkane", vc_tool = "mutect2")
+})
+
+test_that("Conversion to FinalistDX format works using CLI (old Sarek 3.1.* VCF/VEP format, mutect2, CSV output)", {
+  run_name <- "2025_04_03_Panel_run_23_BRCA_255_tkane"
+  assert_finalist_csv_equal(run_name, "mutect2", MUTECT2_VCF_GLOB)
 })
