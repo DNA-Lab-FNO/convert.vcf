@@ -4,14 +4,14 @@
     "--vc_tool",
     default = "haplotypecaller",
     type = "character",
-    choices = c("haplotypecaller", "deepvariant", "strelka"),
+    choices = SUPPORTED_VC_TOOLS,
     help = "Name of the variant calling tool that originally produced the VCF files [default: %(default)s]"
   )
   parser$add_argument(
     "--vcf_annotation_tool",
     default = "vep",
     type = "character",
-    choices = c("vep", "common", "snpeff"),
+    choices = SUPPORTED_VCF_ANNOTATION_TOOLS,
     help = "Name of the variant annotation tool that was used for the original VCF files ('common' is for generic VCFs) [default: %(default)s]"
   )
   parser$add_argument(
