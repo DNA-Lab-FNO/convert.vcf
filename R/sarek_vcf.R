@@ -363,6 +363,8 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       )
     ) %>%
     dplyr::mutate(`Variant Frequency` = `Variant Frequency` * 100) %>%
+    dplyr::mutate(dplyr::across(tidyselect::everything(), ~tidyr::replace_na(as.character(.), "-"))) %>%
+    dplyr::mutate(dplyr::across(tidyselect::everything(), ~dplyr::if_else(. == "", "-", .))) %>%
     dplyr::arrange(Name, Chr, Coordinate)
 }
 
