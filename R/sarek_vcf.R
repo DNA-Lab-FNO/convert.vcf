@@ -293,16 +293,10 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       Impact = impact,
       Consequence = consequence,
       `Clinical significance` = clin_sig,
-      `ClinVar disease name`,
-      `ClinVar review status`,
       SIFT = sift_class,
       `SIFT score` = sift_score,
       `PolyPhen` = poly_phen_class,
       `PolyPhen score` = poly_phen_score,
-      `LRT pred`,
-      `CADD phred`,
-      `DANN score`,
-      `FATHMM pred`,
       `gnomAD AF` = dplyr::any_of(c("gnom_ad_af", "gnom_a_de_af")),
       `gnomAD NFE AF` = dplyr::any_of(c("gnom_ad_nfe_af", "gnom_a_de_nfe_af")),
       `MAX AF` = max_af,
@@ -314,19 +308,12 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       Codons = codons,
       Distance = distance,
       Strand = strand,
-      `HGVS offset`,
       Somatic = somatic,
       Pheno = pheno,
-      codonpos,
-      refcodon,
       Reference = REF,
       Alternate = ALT,
       `Reference depth` = gt_AD_ref,
       `Alternate depth` = gt_AD_alt,
-      `Depth of reference forward`,
-      `Depth of reference reverse`,
-      `Depth of alternate forward`,
-      `Depth of alternate reverse`,
       `gnomAD AF_` = dplyr::any_of(c("gnom_ad_af", "gnom_a_de_af")),
       `gnomAD AFR AF` = dplyr::any_of(c("gnom_ad_afr_af", "gnom_a_de_afr_af")),
       `gnomAD AMR AF` = dplyr::any_of(c("gnom_ad_amr_af", "gnom_a_de_amr_af")),
@@ -337,7 +324,20 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       `gnomAD SAS AF` = dplyr::any_of(c("gnom_ad_sas_af", "gnom_a_de_sas_af")),
       `Ensembl transcript ID` = feature,
       `Pubmed ID` = pubmed,
-      SAMPLE_variant_key
+      SAMPLE_variant_key,
+      `ClinVar disease name`,
+      `ClinVar review status`,
+      `LRT pred`,
+      `CADD phred`,
+      `DANN score`,
+      `FATHMM pred`,
+      `HGVS offset`,
+      codonpos,
+      refcodon,
+      `Depth of reference forward`,
+      `Depth of reference reverse`,
+      `Depth of alternate forward`,
+      `Depth of alternate reverse`
     ) %>%
     dplyr::mutate(
       dplyr::across(
@@ -365,6 +365,8 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
     dplyr::mutate(`Variant Frequency` = `Variant Frequency` * 100) %>%
     dplyr::mutate(dplyr::across(tidyselect::everything(), ~tidyr::replace_na(as.character(.), "-"))) %>%
     dplyr::mutate(dplyr::across(tidyselect::everything(), ~dplyr::if_else(. == "", "-", .))) %>%
+    dplyr::mutate(HGVSp = utils::URLdecode(HGVSp)) %>%
+    dplyr::mutate(Chr = factor(Chr, levels = stringr::str_sort(unique(Chr), numeric = TRUE))) %>%
     dplyr::arrange(Name, Chr, Coordinate)
 }
 
