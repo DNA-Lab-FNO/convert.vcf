@@ -353,7 +353,7 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
           `gnomAD NFE AF`, `MAX AF`, `gnomAD AF_`, `gnomAD AFR AF`, `gnomAD AMR AF`, `gnomAD ASJ AF`, `gnomAD EAS AF`,
           `gnomAD FIN AF`, `gnomAD OTH AF`, `gnomAD SAS AF`
         ),
-        as.numeric
+        as.double
       ),
       dplyr::across(
         c(
@@ -363,6 +363,7 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       )
     ) %>%
     dplyr::mutate(`Variant Frequency` = `Variant Frequency` * 100) %>%
+    dplyr::mutate(dplyr::across(dplyr::where(is.double), .format_float)) %>%
     dplyr::mutate(dplyr::across(tidyselect::everything(), ~tidyr::replace_na(as.character(.), "-"))) %>%
     dplyr::mutate(dplyr::across(tidyselect::everything(), ~dplyr::if_else(. == "", "-", .))) %>%
     dplyr::mutate(HGVSp = utils::URLdecode(HGVSp)) %>%
@@ -385,6 +386,14 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
     stringr::str_detect(gt_GT, glue("^[1-9]({allele_sep_regex}[1-9])+$")) ~ "HET_alt_multi",
     TRUE ~ gt_GT
   )
+}
+
+.format_float <- function(values, sep = ",") {
+  formatted <- formatC(values, format = "f", digits = 6, flag = "", drop0trailing = FALSE) %>%
+    stringr::str_trim()
+
+  dplyr::if_else(formatted == "NA", NA_character_, formatted) %>%
+    stringr::str_replace("\\.", ",")
 }
 
 #' @export
