@@ -30,7 +30,7 @@ EXPECTED_FINALIST_FILES_DIR <- fs::path("expected_data/finalist")
     saveRDS(expected_finalist_df_sample, expected_filename)
   })
 
-  NULL
+  invisible(NULL)
 }
 
 .prepare_finalist_df <- function(finalist_df) {
@@ -71,12 +71,33 @@ assert_finalist_df_equality <- function(run_name, vc_tool = c("haplotypecaller",
   expect_true(all.equal(expected_finalist_df, finalist_df))
 }
 
-assert_finalist_csv_equal <- function(run_name, vc_tool, glob) {
+assert_csv_equal <- function(run_name, vc_tool, glob) {
   cli::cli_alert_info("{run_name} / {vc_tool} / {glob}")
   withr::with_tempfile("out_file", fileext = ".csv", code = {
     run_convert_vcf_cli(c("--vc_tool", vc_tool, "--output_file", out_file, .get_vcf_files(run_name, glob)))
     expect_snapshot_file(out_file, name = glue("{run_name}_{vc_tool}.csv"))
+
+    parsed_vcf_csv_gz_file <- get_parsed_vcf_file_name(out_file)
+    parsed_vcf_csv_file <- fs::path_ext_remove(parsed_vcf_csv_gz_file)
+    .decompress_gzip(parsed_vcf_csv_gz_file, parsed_vcf_csv_file)
+    expect_snapshot_file(parsed_vcf_csv_file, name = glue("{run_name}_{vc_tool}_original.csv"))
   })
+}
+
+.decompress_gzip <- function(infile, outfile) {
+  con_in  <- gzfile(infile, "rb")
+  con_out <- file(outfile, "wb")
+
+  repeat {
+    buf <- readBin(con_in, what = raw(), n = 65536)
+    if (length(buf) == 0) break
+    writeBin(buf, con_out)
+  }
+
+  close(con_in)
+  close(con_out)
+
+  invisible(NULL)
 }
 
 test_that("Conversion to FinalistDX format works (old Sarek 3.1.* VCF/VEP format, haplotypecaller)", {
@@ -89,14 +110,14 @@ test_that("Conversion to FinalistDX format works (new Sarek 3.4.2 VCF/VEP format
 
 test_that("Conversion to FinalistDX format works using CLI (old Sarek 3.1.* VCF/VEP format, all VC tools except mutect2, CSV output)", {
   run_name <- "2021_09_MR-Mikro4"
-  assert_finalist_csv_equal(run_name, "haplotypecaller", HAPLOTYPECALLER_VCF_GLOB)
-  assert_finalist_csv_equal(run_name, "deepvariant", DEEPVARIANT_VCF_GLOB)
-  assert_finalist_csv_equal(run_name, "strelka", STRELKA_VCF_GLOB)
+  assert_csv_equal(run_name, "haplotypecaller", HAPLOTYPECALLER_VCF_GLOB)
+  assert_csv_equal(run_name, "deepvariant", DEEPVARIANT_VCF_GLOB)
+  assert_csv_equal(run_name, "strelka", STRELKA_VCF_GLOB)
 })
 
 test_that("Conversion to FinalistDX format works using CLI (new Sarek 3.4.2 VCF/VEP format, haplotypecaller, CSV output)", {
   run_name <- "2024_05_24_Panel_run_2"
-  assert_finalist_csv_equal(run_name, "haplotypecaller", HAPLOTYPECALLER_VCF_GLOB)
+  assert_csv_equal(run_name, "haplotypecaller", HAPLOTYPECALLER_VCF_GLOB)
 })
 
 test_that("Conversion to FinalistDX format works (new Sarek 3.4.2 VCF/VEP format, mutect2)", {
@@ -105,5 +126,5 @@ test_that("Conversion to FinalistDX format works (new Sarek 3.4.2 VCF/VEP format
 
 test_that("Conversion to FinalistDX format works using CLI (old Sarek 3.1.* VCF/VEP format, mutect2, CSV output)", {
   run_name <- "2025_04_03_Panel_run_23_BRCA_255_tkane"
-  assert_finalist_csv_equal(run_name, "mutect2", MUTECT2_VCF_GLOB)
+  assert_csv_equal(run_name, "mutect2", MUTECT2_VCF_GLOB)
 })

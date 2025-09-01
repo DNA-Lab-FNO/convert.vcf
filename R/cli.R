@@ -19,13 +19,6 @@
     action="store_true",
     help = "Skip variant filtering by FILTER column in VCF file"
   )
-  # parser$add_argument(
-  #   "--output_type",
-  #   default = "finalist",
-  #   type = "character",
-  #   choices = c("original", "finalist"),
-  #   help = "Output type: 'finalist' is the FinalistDX Excel format, 'original' is just user-friendly parsed VCF"
-  # )
   parser$add_argument(
     "--output_file",
     required = TRUE,
@@ -49,8 +42,26 @@ run_convert_vcf_cli <- function(args = commandArgs(TRUE)) {
   cli::cli_alert_info("Input files ({length(args$vcf_files)}):")
   cli::cli_li(items = glue("{{.file {args$vcf_files}}}"))
 
-  agg_df <- convert_vcf_files_to_finalist(args$vcf_files, filter_variants = !args$no_variant_filtering, vc_tool = args$vc_tool, vcf_annotation_tool = args$vcf_annotation_tool)
+  agg_df_finalist <- convert_vcf_files_to_finalist(
+    args$vcf_files,
+    filter_variants = !args$no_variant_filtering,
+    vc_tool = args$vc_tool,
+    vcf_annotation_tool = args$vcf_annotation_tool
+  )
 
-  cli::cli_alert_info("Writing result to {.file {args$output_file}}")
-  write_output_file(agg_df, args$output_file)
+  write_output_file(agg_df_finalist, args$output_file)
+
+  agg_df_parsed <- convert_vcf_files_to_parsed(
+    args$vcf_files,
+    filter_variants = !args$no_variant_filtering,
+    vc_tool = args$vc_tool,
+    vcf_annotation_tool = args$vcf_annotation_tool
+  )
+
+  output_vcf_parsed_file <- get_parsed_vcf_file_name(args$output_file)
+  write_output_file(agg_df_parsed, output_vcf_parsed_file)
+}
+
+get_parsed_vcf_file_name <- function(output_file) {
+  glue("{fs::path_ext_remove(output_file)}_original.csv.gz")
 }

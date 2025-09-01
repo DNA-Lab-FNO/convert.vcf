@@ -418,7 +418,7 @@ get_variant_stats <- function(vcf_df) {
   )
 }
 
-#' @title Convert VCF files into FinalistDX format and export to Excel
+#' @title Convert VCF files into FinalistDX format
 #'
 #' @description This function provides the following steps:
 #' 1. Extraction of sample names from VCF files (see [extract_sample_names()])
@@ -434,6 +434,52 @@ get_variant_stats <- function(vcf_df) {
 #'
 #' @export
 convert_vcf_files_to_finalist <- function(
+    vcf_files,
+    filter_variants = TRUE,
+    vc_tool = SUPPORTED_VC_TOOLS,
+    vcf_annotation_tool = SUPPORTED_VCF_ANNOTATION_TOOLS) {
+  agg_df <- .prepare_vcf_files(
+    vcf_files = vcf_files,
+    filter_variants = filter_variants,
+    vc_tool = vc_tool,
+    vcf_annotation_tool = vcf_annotation_tool
+  )
+
+  cli::cli_alert_info("Converting to FinalistDX format")
+  agg_df <- convert_vcf_df_to_finalist(agg_df)
+  cli::cli_alert_success("Done")
+
+  agg_df
+}
+
+#' @title Convert VCF files into parsed format
+#'
+#' @description This function provides the following steps:
+#' 1. Extraction of sample names from VCF files (see [extract_sample_names()])
+#' 2. Conversion of VCF files to tidy tibble (see [read_vcf()])
+#'
+#' @param vcf_files A character scalar/vector: path(s) to VCF files
+#' @inheritParams filter_variants_param
+#' @inheritParams vc_tool_param
+#' @inheritParams vcf_annotation_tool_param
+#'
+#' @return A tibble
+#'
+#' @export
+convert_vcf_files_to_parsed <- function(
+    vcf_files,
+    filter_variants = TRUE,
+    vc_tool = SUPPORTED_VC_TOOLS,
+    vcf_annotation_tool = SUPPORTED_VCF_ANNOTATION_TOOLS) {
+  .prepare_vcf_files(
+    vcf_files = vcf_files,
+    filter_variants = filter_variants,
+    vc_tool = vc_tool,
+    vcf_annotation_tool = vcf_annotation_tool
+  )
+}
+
+.prepare_vcf_files <- function(
     vcf_files,
     filter_variants = TRUE,
     vc_tool = SUPPORTED_VC_TOOLS,
@@ -454,10 +500,6 @@ convert_vcf_files_to_finalist <- function(
   cli::cli_alert_info("Per-sample variant numbers:")
   get_per_sample_variant_stats(agg_df) %>%
     print(n = Inf)
-
-  cli::cli_alert_info("Converting to FinalistDX format")
-  agg_df <- convert_vcf_df_to_finalist(agg_df)
-  cli::cli_alert_success("Done")
 
   agg_df
 }
