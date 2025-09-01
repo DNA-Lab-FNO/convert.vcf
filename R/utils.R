@@ -15,7 +15,9 @@
 write_output_file <- function(df, output_file) {
   output_file_ext <- fs::path_ext(output_file)
 
-  if (output_file_ext == "csv") {
+  cli::cli_alert_info("Writing to {.file {output_file}}")
+
+  if (output_file_ext == "csv" || stringr::str_ends(output_file, stringr::fixed(".csv.gz"))) {
     readr::write_csv(df, output_file)
   } else if (output_file_ext == "xlsx") {
     writexl::write_xlsx(df, output_file)
