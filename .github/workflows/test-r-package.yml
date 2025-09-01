@@ -46,8 +46,7 @@ jobs:
           cache-version: 1
 
       - name: Check package
-        env:
-          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          Rscript -e 'install.packages("rcmdcheck")'
-          make check
+        run: make check
+
+      - name: Test package
+        run: make test
