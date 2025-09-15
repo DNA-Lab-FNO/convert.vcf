@@ -12,19 +12,43 @@
 }
 
 #' @export
-write_output_file <- function(df, output_file) {
+write_output_file <- function(df, output_file, xlsx_max_rows_per_file = 999999) {
   output_file_ext <- fs::path_ext(output_file)
 
-  cli::cli_alert_info("Writing to {.file {output_file}}")
 
   if (output_file_ext == "csv" || stringr::str_ends(output_file, stringr::fixed(".csv.gz"))) {
+    cli::cli_alert_info("Writing to {.file {output_file}}")
     readr::write_csv(df, output_file)
   } else if (output_file_ext == "xlsx") {
-    writexl::write_xlsx(df, output_file)
+    .write_xlsx_file(df, output_file, xlsx_max_rows_per_file)
   } else if (output_file_ext == "rds") {
+    cli::cli_alert_info("Writing to {.file {output_file}}")
     saveRDS(df, output_file)
   } else {
     cli::cli_abort("Cannot write output file: unknown extension '{output_file_ext}' for output file {.file {output_file}}")
+  }
+}
+
+.write_xlsx_file <- function(df, output_file, xlsx_max_rows_per_file) {
+  max_rows <- 999999
+  n_rows <- nrow(df)
+  output_base_name <- fs::path_ext_remove(output_file)
+
+  if (n_rows <= xlsx_max_rows_per_file) {
+    cli::cli_alert_info("Writing to {.file {output_file}}")
+    writexl::write_xlsx(df, output_file)
+  } else {
+    n_chunks <- ceiling(n_rows / xlsx_max_rows_per_file)
+    cli::cli_alert_warning("Dataframe contains more than {xlsx_max_rows_per_file} rows - splitting output file to {n_chunks} chunks")
+    for (i in seq_len(n_chunks)) {
+      start <- (i - 1) * xlsx_max_rows_per_file + 1
+      end <- min(i * xlsx_max_rows_per_file, n_rows)
+
+      output_chunk_file <- glue("{output_base_name}_00{i}.xlsx")
+
+      cli::cli_alert_info("Writing chunk {i}/{n_chunks} to {.file {output_chunk_file}}")
+      writexl::write_xlsx(df[start:end, , drop = FALSE], output_chunk_file)
+    }
   }
 }
 
