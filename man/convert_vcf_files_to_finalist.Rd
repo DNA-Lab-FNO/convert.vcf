@@ -2,13 +2,13 @@
 % Please edit documentation in R/sarek_vcf.R
 \name{convert_vcf_files_to_finalist}
 \alias{convert_vcf_files_to_finalist}
-\title{Convert VCF files into FinalistDX format and export to Excel}
+\title{Convert VCF files into FinalistDX format}
 \usage{
 convert_vcf_files_to_finalist(
   vcf_files,
   filter_variants = TRUE,
-  vc_tool = c("haplotypecaller", "deepvariant", "strelka"),
-  vcf_annotation_tool = c("vep", "common", "snpeff")
+  vc_tool = SUPPORTED_VC_TOOLS,
+  vcf_annotation_tool = SUPPORTED_VCF_ANNOTATION_TOOLS
 )
 }
 \arguments{

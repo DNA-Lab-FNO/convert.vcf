@@ -8,8 +8,8 @@ read_vcf(
   file,
   sample_name,
   filter_variants = TRUE,
-  vc_tool = c("haplotypecaller", "deepvariant", "strelka"),
-  vcf_annotation_tool = c("vep", "common", "snpeff")
+  vc_tool = SUPPORTED_VC_TOOLS,
+  vcf_annotation_tool = SUPPORTED_VCF_ANNOTATION_TOOLS
 )
 }
 \arguments{
