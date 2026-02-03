@@ -3,6 +3,7 @@
 export(calculate_variant_stats)
 export(convert_vcf_df_to_finalist)
 export(convert_vcf_files_to_finalist)
+export(convert_vcf_files_to_parsed)
 export(create_variant_keys)
 export(extract_sample_names)
 export(filter_vcf)
