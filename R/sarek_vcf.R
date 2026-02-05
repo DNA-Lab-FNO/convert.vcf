@@ -246,7 +246,7 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       `Variant occurred [%]` = scales::percent(n / n_samples, suffix = "", accuracy = 0.01)
     )
 
-  vcf_df %>%
+  vcf_df <- vcf_df %>%
     dplyr::left_join(n_ids, by = c("CHROM", "POS", "ID", "REF", "ALT")) %>%
     tidyr::extract(sift, c("sift_class", "sift_score"), regex = "^(.+)\\((.*)\\)$", remove = FALSE, convert = TRUE) %>%
     tidyr::extract(poly_phen, c("poly_phen_class", "poly_phen_score"), regex = "^(.+)\\((.*)\\)$", remove = FALSE, convert = TRUE) %>%
@@ -292,7 +292,6 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       `ClinVar Allele ID`,
       Impact = impact,
       Consequence = consequence,
-      `Clinical significance` = clin_sig,
       SIFT = sift_class,
       `SIFT score` = sift_score,
       `PolyPhen` = poly_phen_class,
@@ -337,13 +336,35 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       `Depth of reference forward`,
       `Depth of reference reverse`,
       `Depth of alternate forward`,
-      `Depth of alternate reverse`
-    ) %>%
+      `Depth of alternate reverse`,
+      `ClinVar ID` = dplyr::any_of("clinvar_id"),
+      `ClinVar HGVS` = dplyr::any_of("clinvar_hgvs"),
+      `ClinVar Review` = dplyr::any_of("clinvar_review"),
+      dplyr::any_of(c("clin_sig", "clinvar_clnsig"))
+    )
+
+  if ("clinvar_clnsig" %in% colnames(vcf_df)) {
+    vcf_df <- vcf_df %>%
+      dplyr::rename(
+        `Clinical significance` = dplyr::any_of("clinvar_clnsig"),
+        `Clinical significance (old)` = clin_sig
+      ) %>%
+      dplyr::relocate(`Clinical significance (old)`, .after = `ClinVar Review`)
+  } else {
+    vcf_df <- vcf_df %>%
+      dplyr::rename(
+        `Clinical significance` = clin_sig
+      )
+  }
+
+  vcf_df %>%
+    dplyr::relocate(`Clinical significance`, .after = Consequence) %>%
     dplyr::mutate(
       dplyr::across(
         c(
           `Name`, `Symbol`, `Chr`, `Genotype`, `Variant_class`, `Feature`, `Canonical`, `Impact`, `Consequence`,
-          `Clinical significance`, `SIFT`, `PolyPhen`, `Strand`, `Somatic`, `Pheno`, `Ensembl transcript ID`
+          `SIFT`, `PolyPhen`, `Strand`, `Somatic`, `Pheno`, `Ensembl transcript ID`,
+          dplyr::any_of(c("Clinical significance", "Clinical significance (old)", "ClinVar ID", "ClinVar HGVS", "ClinVar Review"))
         ),
         factor
       ),
@@ -364,8 +385,8 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
     ) %>%
     dplyr::mutate(`Variant Frequency` = `Variant Frequency` * 100) %>%
     dplyr::mutate(dplyr::across(dplyr::where(is.double), .format_float)) %>%
-    dplyr::mutate(dplyr::across(tidyselect::everything(), ~tidyr::replace_na(as.character(.), "-"))) %>%
-    dplyr::mutate(dplyr::across(tidyselect::everything(), ~dplyr::if_else(. == "", "-", .))) %>%
+    dplyr::mutate(dplyr::across(dplyr::everything(), ~tidyr::replace_na(as.character(.), "-"))) %>%
+    dplyr::mutate(dplyr::across(dplyr::everything(), ~dplyr::if_else(. == "", "-", .))) %>%
     dplyr::mutate(HGVSp = utils::URLdecode(HGVSp)) %>%
     dplyr::mutate(Chr = factor(Chr, levels = stringr::str_sort(unique(Chr), numeric = TRUE))) %>%
     dplyr::arrange(Name, Chr, Coordinate)
