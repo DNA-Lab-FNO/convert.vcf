@@ -15,10 +15,9 @@
 write_output_file <- function(df, output_file, xlsx_max_rows_per_file = 999999) {
   output_file_ext <- fs::path_ext(output_file)
 
-
   if (output_file_ext == "csv" || stringr::str_ends(output_file, stringr::fixed(".csv.gz"))) {
     cli::cli_alert_info("Writing to {.file {output_file}}")
-    readr::write_csv(df, output_file)
+    readr::write_csv(df, output_file, quote = "all")
   } else if (output_file_ext == "xlsx") {
     .write_xlsx_file(df, output_file, xlsx_max_rows_per_file)
   } else if (output_file_ext == "rds") {
