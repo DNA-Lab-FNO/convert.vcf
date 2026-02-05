@@ -108,6 +108,14 @@ test_that("Conversion to FinalistDX format works (new Sarek 3.4.2 VCF/VEP format
   assert_finalist_df_equality("2024_05_24_Panel_run_2", vc_tool = "haplotypecaller")
 })
 
+test_that("Conversion to FinalistDX format works (new Sarek 3.4.2 VCF/VEP format, haplotypecaller, clinvar columns from dbNSFP)", {
+  assert_finalist_df_equality("2026_01_26_validace1_Hluchota50", vc_tool = "haplotypecaller")
+})
+
+test_that("Conversion to FinalistDX format works using CLI (new Sarek 3.4.2 VCF/VEP format, haplotypecaller, clinvar columns from dbNSFP, CSV output)", {
+  assert_csv_equal("2026_01_26_validace1_Hluchota50", "haplotypecaller", HAPLOTYPECALLER_VCF_GLOB)
+})
+
 test_that("Conversion to FinalistDX format works using CLI (old Sarek 3.1.* VCF/VEP format, all VC tools except mutect2, CSV output)", {
   run_name <- "2021_09_MR-Mikro4"
   assert_csv_equal(run_name, "haplotypecaller", HAPLOTYPECALLER_VCF_GLOB)
