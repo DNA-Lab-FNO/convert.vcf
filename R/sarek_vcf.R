@@ -319,7 +319,7 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       `gnomAD ASJ AF` = dplyr::any_of(c("gnom_ad_asj_af", "gnom_a_de_asj_af")),
       `gnomAD EAS AF` = dplyr::any_of(c("gnom_ad_eas_af", "gnom_a_de_eas_af")),
       `gnomAD FIN AF` = dplyr::any_of(c("gnom_ad_fin_af", "gnom_a_de_fin_af")),
-      `gnomAD OTH AF` = dplyr::any_of(c("gnom_ad_oth_af", "gnom_a_de_oth_af")),
+      `gnomAD OTH AF` = dplyr::any_of(c("gnom_ad_oth_af", "gnom_a_de_oth_af", "gnom_a_de_remaining_af")),
       `gnomAD SAS AF` = dplyr::any_of(c("gnom_ad_sas_af", "gnom_a_de_sas_af")),
       `Ensembl transcript ID` = feature,
       `Pubmed ID` = pubmed,
