@@ -1,3 +1,9 @@
+.COLUMNS_TO_ROUND <- c(
+  "Variant Frequency",
+  "Variant occurred [%]",
+  "Variant occurred (with REF+ALT) [%]"
+)
+
 .validate_vcf_files <- function(vcf_files) {
   vcf_files_missing <- vcf_files[!fs::file_exists(vcf_files)]
   if (!rlang::is_empty(vcf_files_missing)) {
@@ -235,27 +241,26 @@ calculate_variant_stats <- function(vcf_df, vc_tool = SUPPORTED_VC_TOOLS) {
 convert_vcf_df_to_finalist <- function(vcf_df) {
   n_samples <- unique(vcf_df$SAMPLE) %>% length()
 
-  ## count variant occurrences within all samples
-  n_ids <- vcf_df %>%
-    ## distinct IDs within each sample as there are multiple annotations per a single ID
-    dplyr::distinct(SAMPLE, CHROM, POS, ID, REF, ALT) %>%
-    dplyr::group_by(CHROM, POS, ID, REF, ALT) %>%
-    dplyr::tally() %>%
-    dplyr::mutate(
-      `Variant occurred` = glue("{n}/{n_samples}") %>% as.character(),
-      `Variant occurred [%]` = scales::percent(n / n_samples, suffix = "", accuracy = 0.01)
-    )
+  variant_occurred_simple <- .calculate_variant_occurred(
+    vcf_df,
+    group_by = c("CHROM", "POS"),
+    output_column = "Variant occurred"
+  )
+  variant_occurred_ref_alt <- .calculate_variant_occurred(
+    vcf_df,
+    group_by = c("CHROM", "POS", "REF", "ALT"),
+    output_column = "Variant occurred (with REF+ALT)"
+  )
 
   vcf_df <- vcf_df %>%
-    dplyr::left_join(n_ids, by = c("CHROM", "POS", "ID", "REF", "ALT")) %>%
+    dplyr::left_join(variant_occurred_simple, by = c("CHROM", "POS")) %>%
+    dplyr::left_join(variant_occurred_ref_alt, by = c("CHROM", "POS", "REF", "ALT")) %>%
     tidyr::extract(sift, c("sift_class", "sift_score"), regex = "^(.+)\\((.*)\\)$", remove = FALSE, convert = TRUE) %>%
     tidyr::extract(poly_phen, c("poly_phen_class", "poly_phen_score"), regex = "^(.+)\\((.*)\\)$", remove = FALSE, convert = TRUE) %>%
     dplyr::mutate(
       Genotype = .parse_genotype(gt_GT),
       Canonical = dplyr::if_else(canonical == "YES", "YES", "NO"),
       `ClinVar Allele ID` = NA_character_,
-      `ClinVar disease name` = NA_character_,
-      `ClinVar review status` = NA_character_,
       `LRT pred` = NA_real_,
       `CADD phred` = NA_real_,
       `DANN score` = NA_real_,
@@ -324,8 +329,6 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       `Ensembl transcript ID` = feature,
       `Pubmed ID` = pubmed,
       SAMPLE_variant_key,
-      `ClinVar disease name`,
-      `ClinVar review status`,
       `LRT pred`,
       `CADD phred`,
       `DANN score`,
@@ -339,8 +342,11 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       `Depth of alternate reverse`,
       `ClinVar ID` = dplyr::any_of("clinvar_id"),
       `ClinVar HGVS` = dplyr::any_of("clinvar_hgvs"),
-      `ClinVar Review` = dplyr::any_of("clinvar_review"),
-      dplyr::any_of(c("clin_sig", "clinvar_clnsig"))
+      `ClinVar disease name` = dplyr::any_of("clinvar_trait"),
+      `ClinVar review status` = dplyr::any_of("clinvar_review"),
+      dplyr::any_of(c("clin_sig", "clinvar_clnsig")),
+      `Variant occurred (with REF+ALT)`,
+      `Variant occurred (with REF+ALT) [%]`
     )
 
   if ("clinvar_clnsig" %in% colnames(vcf_df)) {
@@ -349,7 +355,7 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
         `Clinical significance` = dplyr::any_of("clinvar_clnsig"),
         `Clinical significance (old)` = clin_sig
       ) %>%
-      dplyr::relocate(`Clinical significance (old)`, .after = `ClinVar Review`)
+      dplyr::relocate(`Clinical significance (old)`, .after = `ClinVar review status`)
   } else {
     vcf_df <- vcf_df %>%
       dplyr::rename(
@@ -370,7 +376,8 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       ),
       dplyr::across(
         c(
-          `Variant occurred [%]`, `Variant Frequency`, `SIFT score`, `PolyPhen score`, `gnomAD AF`,
+          `Variant occurred [%]`, `Variant occurred (with REF+ALT) [%]`, `Variant Frequency`,
+          `SIFT score`, `PolyPhen score`, `gnomAD AF`,
           `gnomAD NFE AF`, `MAX AF`, `gnomAD AF_`, `gnomAD AFR AF`, `gnomAD AMR AF`, `gnomAD ASJ AF`, `gnomAD EAS AF`,
           `gnomAD FIN AF`, `gnomAD OTH AF`, `gnomAD SAS AF`
         ),
@@ -384,6 +391,7 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       )
     ) %>%
     dplyr::mutate(`Variant Frequency` = `Variant Frequency` * 100) %>%
+    dplyr::mutate(dplyr::across(dplyr::all_of(.COLUMNS_TO_ROUND), ~ round(.x, digits = 2))) %>%
     dplyr::mutate(dplyr::across(dplyr::where(is.double), .format_float)) %>%
     dplyr::mutate(dplyr::across(dplyr::everything(), ~tidyr::replace_na(as.character(.), "-"))) %>%
     dplyr::mutate(dplyr::across(dplyr::everything(), ~dplyr::if_else(. == "", "-", .))) %>%
@@ -410,11 +418,32 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
 }
 
 .format_float <- function(values, sep = ",") {
-  formatted <- formatC(values, format = "f", digits = 6, flag = "", drop0trailing = FALSE) %>%
+  formatted <- formatC(values, format = "f", digits = 6, flag = "", drop0trailing = TRUE) %>%
     stringr::str_trim()
 
   dplyr::if_else(formatted == "NA", NA_character_, formatted) %>%
     stringr::str_replace("\\.", ",")
+}
+
+#' @title Count variant occurrences within all samples
+.calculate_variant_occurred <- function(vcf_df, group_by, output_column) {
+  group_vars <- rlang::syms(group_by)
+
+  col_pct <- glue("{output_column} [%]")
+
+  n_samples <- vcf_df %>%
+    dplyr::distinct(SAMPLE) %>%
+    nrow()
+
+  vcf_df %>%
+    dplyr::distinct(SAMPLE, !!!group_vars) %>%
+    dplyr::group_by(!!!group_vars) %>%
+    dplyr::tally() %>%
+    dplyr::mutate(
+      !!output_column := glue::glue("{n}/{n_samples}") %>% as.character(),
+      !!col_pct := scales::percent(n / n_samples, suffix = "", accuracy = 0.01)
+    ) %>%
+    dplyr::select(-n)
 }
 
 #' @export

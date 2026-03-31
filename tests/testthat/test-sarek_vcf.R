@@ -66,8 +66,15 @@ assert_finalist_df_equality <- function(run_name, vc_tool = c("haplotypecaller",
     expect_false(df_diff_invalid)
   }
 
-  finalist_df <- finalist_df[, colnames(expected_finalist_df)]
+  expected_columns <- colnames(expected_finalist_df) %>% sort()
+  output_columns <- colnames(finalist_df) %>% sort()
+  missing_columns <- setdiff(expected_columns, output_columns)
+  extra_columns <- setdiff(output_columns, expected_columns)
 
+  expect_true(rlang::is_empty(missing_columns), info = glue("Missing column in output Finalist columns: {missing_columns}"))
+  expect_true(rlang::is_empty(extra_columns), info = glue("Extra column in output Finalist columns: {extra_columns}"))
+
+  finalist_df <- finalist_df[, intersect(colnames(expected_finalist_df), colnames(finalist_df))]
   expect_true(all.equal(expected_finalist_df, finalist_df))
 }
 
