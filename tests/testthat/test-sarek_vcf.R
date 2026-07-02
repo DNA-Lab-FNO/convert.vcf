@@ -1,6 +1,7 @@
 TEST_VCF_FILES_DIR <- fs::path("test_data/vcf")
 
 HAPLOTYPECALLER_VCF_GLOB <- "*.haplotypecaller.filtered_VEP.ann.vcf.gz"
+HAPLOTYPECALLER_VCFANNO_GLOB <- "*.haplotypecaller.filtered.norm.sorted_VEP.ann.vcfanno.vcf.gz"
 DEEPVARIANT_VCF_GLOB <- "*.deepvariant_VEP.ann.vcf.gz"
 STRELKA_VCF_GLOB <- "*.strelka.variants_VEP.ann.vcf.gz"
 MUTECT2_VCF_GLOB <- "*.mutect2.filtered_VEP.ann.vcf.gz"
@@ -121,6 +122,10 @@ test_that("Conversion to FinalistDX format works (new Sarek 3.4.2 VCF/VEP format
 
 test_that("Conversion to FinalistDX format works using CLI (new Sarek 3.4.2 VCF/VEP format, haplotypecaller, clinvar columns from dbNSFP, CSV output)", {
   assert_csv_equal("2026_01_26_validace1_Hluchota50", "haplotypecaller", HAPLOTYPECALLER_VCF_GLOB)
+})
+
+test_that("Conversion to FinalistDX format works using CLI (Sarek 3.9.0 VCF/VEP format, haplotypecaller, dbNSFP and vcfanno/clinvar, CSV output)", {
+  assert_csv_equal("vcfanno", "haplotypecaller", HAPLOTYPECALLER_VCFANNO_GLOB)
 })
 
 test_that("Conversion to FinalistDX format works using CLI (old Sarek 3.1.* VCF/VEP format, all VC tools except mutect2, CSV output)", {
