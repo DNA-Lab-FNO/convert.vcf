@@ -260,7 +260,6 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
     dplyr::mutate(
       Genotype = .parse_genotype(gt_GT),
       Canonical = dplyr::if_else(canonical == "YES", "YES", "NO"),
-      `ClinVar Allele ID` = NA_character_,
       `LRT pred` = NA_real_,
       `CADD phred` = NA_real_,
       `DANN score` = NA_real_,
@@ -271,7 +270,12 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       `Depth of reference forward` = NA_integer_,
       `Depth of reference reverse` = NA_integer_,
       `Depth of alternate forward` = NA_integer_,
-      `Depth of alternate reverse` = NA_integer_
+      `Depth of alternate reverse` = NA_integer_,
+      `Clinical significance` = NA_character_,
+      `ClinVar Allele ID` = NA_character_,
+      `ClinVar HGVS` = NA_character_,
+      `ClinVar disease name` = NA_character_,
+      `ClinVar review status` = NA_character_
     ) %>%
     dplyr::select(
       Name = SAMPLE,
@@ -294,7 +298,6 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       HGVSp = hgv_sp,
       `VEP dbSNP ID` = ID,
       `dbSNP ID` = ID,
-      `ClinVar Allele ID`,
       Impact = impact,
       Consequence = consequence,
       SIFT = sift_class,
@@ -340,27 +343,45 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
       `Depth of reference reverse`,
       `Depth of alternate forward`,
       `Depth of alternate reverse`,
-      `ClinVar ID` = dplyr::any_of("clinvar_id"),
-      `ClinVar HGVS` = dplyr::any_of("clinvar_hgvs"),
-      `ClinVar disease name` = dplyr::any_of("clinvar_trait"),
-      `ClinVar review status` = dplyr::any_of("clinvar_review"),
-      dplyr::any_of(c("clin_sig", "clinvar_clnsig")),
       `Variant occurred (with REF+ALT)`,
-      `Variant occurred (with REF+ALT) [%]`
+      `Variant occurred (with REF+ALT) [%]`,
+      dplyr::ends_with("_vcfanno"),
+      dplyr::starts_with("clinvar_"),
+      dplyr::any_of("clin_sig")
     )
 
-  if ("clinvar_clnsig" %in% colnames(vcf_df)) {
-    vcf_df <- vcf_df %>%
-      dplyr::rename(
-        `Clinical significance` = dplyr::any_of("clinvar_clnsig"),
-        `Clinical significance (old)` = clin_sig
-      ) %>%
-      dplyr::relocate(`Clinical significance (old)`, .after = `ClinVar review status`)
-  } else {
-    vcf_df <- vcf_df %>%
-      dplyr::rename(
-        `Clinical significance` = clin_sig
+  if ("CLNSIG_vcfanno" %in% colnames(vcf_df)) {
+    vcf_df <- vcf_df %>% dplyr::rename(
+      `Clinical significance` = CLNSIG_vcfanno,
+      `ClinVar Allele ID` = CLNID_vcfanno,
+      `ClinVar HGVS` = CLNHGVS_vcfanno,
+      `ClinVar disease name` = CLNDN_vcfanno,
+      `ClinVar review status` = CLNREVSTAT_vcfanno,
+    ) %>%
+      dplyr::select(
+        -dplyr::starts_with("clinvar_"),
+        -dplyr::any_of("clin_sig")
       )
+  }
+
+  # From dbNSFP
+  if ("clinvar_clnsig" %in% colnames(vcf_df)) {
+    vcf_df <- vcf_df %>% dplyr::rename(
+      `ClinVar Allele ID` = clinvar_id,
+      `ClinVar HGVS` = clinvar_hgvs,
+      `ClinVar disease name` = clinvar_trait,
+      `ClinVar review status` = clinvar_review,
+      `Clinical significance` = clinvar_clnsig
+    ) %>%
+      dplyr::select(
+        -dplyr::any_of("clin_sig")
+      )
+  }
+
+  if ("clin_sig" %in% colnames(vcf_df)) {
+    vcf_df <- vcf_df %>% dplyr::rename(
+      `Clinical significance` = clin_sig
+    )
   }
 
   vcf_df %>%
@@ -370,7 +391,7 @@ convert_vcf_df_to_finalist <- function(vcf_df) {
         c(
           `Name`, `Symbol`, `Chr`, `Genotype`, `Variant_class`, `Feature`, `Canonical`, `Impact`, `Consequence`,
           `SIFT`, `PolyPhen`, `Strand`, `Somatic`, `Pheno`, `Ensembl transcript ID`,
-          dplyr::any_of(c("Clinical significance", "Clinical significance (old)", "ClinVar ID", "ClinVar HGVS", "ClinVar Review"))
+          dplyr::any_of(c("Clinical significance", "Clinical significance (old)", "ClinVar Allele ID", "ClinVar HGVS", "ClinVar Review"))
         ),
         factor
       ),
